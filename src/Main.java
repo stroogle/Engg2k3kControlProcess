@@ -1,7 +1,18 @@
+import controlprocess.*;
+
 public class Main {
 
     public static void main(String[] args) {
-        System.out.println("Hello World!");
+
+        SocketServer server = new SocketServer(49203);
+
+        try {
+            server.start();
+            server.close();
+        } catch (Exception e) {
+            System.err.println(e);
+        }
+
     }
 
 }
