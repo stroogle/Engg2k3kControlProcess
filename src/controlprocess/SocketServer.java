@@ -15,7 +15,7 @@ public class SocketServer {
         this.port = port;
     }
 
-    public void start() throws Exception {
+    public String start() throws Exception {
         server = new ServerSocket(this.port);
         client = server.accept();
 
@@ -37,6 +37,8 @@ public class SocketServer {
 
             nextLine = input.readLine();
         }
+
+        return nextLine;
 
     }
 

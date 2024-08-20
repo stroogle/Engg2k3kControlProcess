@@ -6,9 +6,13 @@ public class Main {
 
         SocketServer server = new SocketServer(49203);
 
+        String lastMessage = null;
+
         try {
-            server.start();
-            server.close();
+            while (lastMessage == null || !lastMessage.equals("STOP")) {
+                lastMessage = server.start();
+                server.close();
+            }
         } catch (Exception e) {
             System.err.println(e);
         }
