@@ -8,7 +8,7 @@ public class SocketServer {
     private ServerSocket server;
     private Socket client;
     private PrintWriter output;
-    private DataOutputStream output2;
+    // private DataOutputStream output2;
     private BufferedReader input;
     private int port;
 
