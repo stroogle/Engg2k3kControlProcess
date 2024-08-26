@@ -21,15 +21,13 @@ public class Main {
             // espThread.start();
 
 
-            try {
-                while (lastMessage == null || !lastMessage.equals("STOP")) {
-                    lastMessage = server.start();
-                    server.close();
-                }
-            } catch (Exception e) {
-                System.err.println(e);
+            
+            while (lastMessage == null || !lastMessage.equals("STOP")) {
+                lastMessage = server.start();
+                server.close();
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             System.out.println(e);
         }
 
