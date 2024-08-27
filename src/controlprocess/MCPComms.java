@@ -5,32 +5,43 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.io.*;
+import java.time.*;
+import java.nio.charset.StandardCharsets;
+
 
 public class MCPComms implements Runnable {
-    public static PrintWriter dataOut;
-    public static BufferedReader dataIn;
-    public static String[] recievedMsg;
-    public static Socket socketConnection;
+    public DatagramSocket socket;
+    public InetAddress hostAddress;
+    public int portNumber;
+    public String[] receivedMsg;
+    public LocalTime time;
+    public static final int BUFFER_SIZE = 1024;
+    public ArrayList<String[]> jobs4CCP = new ArrayList<>();
+    public ArrayList<String[]> jobs4MCP = new ArrayList<>();
 
-    public MCPComms(InetAddress hostAddress, int portNumber){
-        try{
-            socketConnection = new Socket(hostAddress, portNumber); 
-            dataOut = new PrintWriter(socketConnection.getOutputStream(), true);
-            dataIn = new BufferedReader(new InputStreamReader(socketConnection.getInputStream()));
-            
-        }
-        catch(Exception e){
+    public MCPComms(InetAddress hostAddress, int portNumber, ArrayList<String[]> MCP2CCPlist, ArrayList<String[]> CCP2MCPlist) {
+        try {
+            this.hostAddress = hostAddress;
+            this.portNumber = portNumber;
+            this.socket = new DatagramSocket();
+            jobs4CCP = MCP2CCPlist;
+            jobs4MCP = CCP2MCPlist;
+        } catch (Exception e) {
             System.out.println(e);
         }
-
     }
 
     public void init(){
         try{
-            String hello = "{\"client_type\":\"blade_runner\",\"message\":\"BRIN\",\"client_id\":\"BR08\"}";  // Our HELLO
-            dataOut.println(hello);
-    
-            recieveMsg();
+            time = LocalTime.now();
+            String timeStr = time.toString();
+            String hello = ("{\"client_type\":\"ccp\",\"message\":\"CCIN\",\"client_id\":\"BR08\",\"timestamp\": " + timeStr + "}");  // Our HELLO
+            sendMsg(hello);
+
+            receiveMsg();
+            if(receivedMsg[1]=="AKIN"){
+                System.out.println("Connection Established!");
+            }
         }
         catch(Exception e){
             System.out.println(e);
@@ -38,13 +49,26 @@ public class MCPComms implements Runnable {
         
     }
 
-    public void recieveMsg(){
+    public void sendMsg(String msg) {
         try {
-            String rawStr = dataIn.readLine();
-            recievedMsg = deserialize(rawStr);
+            byte[] sendData = msg.getBytes(StandardCharsets.UTF_8);
+            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, hostAddress, portNumber);
+            socket.send(sendPacket);
         } catch (Exception e) {
-            System.out.println(e); 
-       }
+            System.out.println(e);
+        }
+    }
+
+    public void receiveMsg() {
+        try {
+            byte[] receiveData = new byte[BUFFER_SIZE];
+            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+            socket.receive(receivePacket);
+            String rawStr = new String(receivePacket.getData(), 0, receivePacket.getLength(), StandardCharsets.UTF_8);
+            receivedMsg = deserialize(rawStr);
+        } catch (Exception e) {
+            System.out.println(e);
+        }
     }
 
     public String[] deserialize(String jsonStr){
@@ -59,20 +83,16 @@ public class MCPComms implements Runnable {
                 values.add(value);
             }
         }
+        
+        jobs4CCP.add(data);
 
         return data;
     }
 
-    public void kill(){
-        try{
-            dataIn.close();
-            dataOut.close();
-            socketConnection.close();
+    public void kill() {
+        if (socket != null && !socket.isClosed()) {
+            socket.close();
         }
-        catch(Exception e){
-            System.out.println(e);
-        }
-        
     }
 
     @Override

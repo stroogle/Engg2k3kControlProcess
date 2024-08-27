@@ -4,16 +4,19 @@ package controlprocess;
 import java.net.*;
 import java.io.*;
 
-public class SocketServer {
+public class SocketServer implements Runnable{
 
     private ServerSocket server;
     private Socket client;
     private PrintWriter output;
     private BufferedReader input;
     private int port;
+    public CCComms comms;
+    public String status = "";
 
-    public SocketServer(int port) {
+    public SocketServer(int port, CCComms c) {
         this.port = port;
+        this.comms = c;
     }
 
     public String start() throws Exception {
@@ -27,14 +30,19 @@ public class SocketServer {
 
         while (nextLine != null) {
 
-            if (nextLine.equals("HELLO")) {
-                sendMessage("HI THERE");
-            }
+            // if (nextLine.equals("HELLO")) {
+            //     sendMessage("HI THERE");
+            // }
 
-            if (nextLine.equals("STOP")) {
-                sendMessage("STOP");
-                break;
-            }
+            // if (nextLine.equals("STOP")) {
+            //     sendMessage("STOP");
+            //     break;
+            // }
+
+            status = nextLine;
+
+            this.comms.readJob();
+            sendMessage(comms.msgToESP);
 
             nextLine = input.readLine();
         }
@@ -55,6 +63,22 @@ public class SocketServer {
         output.println(str);
         System.out.println("SENT: " + str);
          
+    }
+
+
+    @Override
+    public void run() {
+        try {
+            String lastMessage = null;
+        
+            while (lastMessage == null || !lastMessage.equals("STOP")) {
+                lastMessage = this.start();
+                this.close();
+            }
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+        
     }
 
 
