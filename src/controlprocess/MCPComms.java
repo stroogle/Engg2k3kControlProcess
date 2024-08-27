@@ -1,11 +1,12 @@
 package controlprocess;
 
+
 import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.io.*;
 
-public class MCPComms {
+public class MCPComms implements Runnable {
     public static PrintWriter dataOut;
     public static BufferedReader dataIn;
     public static String[] recievedMsg;
@@ -72,5 +73,10 @@ public class MCPComms {
             System.out.println(e);
         }
         
+    }
+
+    @Override
+    public void run() {
+
     }
 }

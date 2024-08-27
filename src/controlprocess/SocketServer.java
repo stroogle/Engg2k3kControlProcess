@@ -1,5 +1,6 @@
 package controlprocess;
 
+
 import java.net.*;
 import java.io.*;
 
@@ -49,7 +50,7 @@ public class SocketServer {
         this.server.close();
 
     }
-    
+
     public void sendMessage(String str) {
         output.println(str);
         System.out.println("SENT: " + str);

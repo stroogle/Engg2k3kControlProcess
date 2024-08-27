@@ -6,26 +6,19 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            InetAddress addr = InetAddress.getByName("10.20.30.108");
-            MCPComms mcp = new MCPComms(addr, 3008);
+            InetAddress addr = InetAddress.getByName("10.20.30.1");
+            MCPComms mcp = new MCPComms(addr, 2000);
 
             SocketServer server = new SocketServer(49203);
 
-            String lastMessage = null;
             // In one thread, we use MCPComms to talk to MCP
             // In another, we use CCComms to talk to the ESP
-            // Thread mcpThread = new Thread(new MCPComms("10.20.30.108", 3008));
-            // Thread espThread = new Thread(new CCComms());
-
-            // mcpThread.start();
-            // espThread.start();
-
-
             
-            while (lastMessage == null || !lastMessage.equals("STOP")) {
-                lastMessage = server.start();
-                server.close();
-            }
+            Thread mcpThread = new Thread(mcp);
+            Thread espThread = new Thread(new CCComms(server));
+
+            mcpThread.start();
+            espThread.start();
         }
         catch (Exception e) {
             System.out.println(e);
