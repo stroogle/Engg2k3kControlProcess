@@ -32,6 +32,9 @@ public class CCComms {
             else if(jobs4CCP.get(0)[4]=="STOP") {
                 msgToESP = "STOP";
             }
+            else if(jobs4CCP.get(0)[4]=="MOVE") {
+                msgToESP = "MOVE";
+            }
             else if(jobs4CCP.get(0)[4]=="DOPN") {
                 msgToESP = "DOPN";
             }
