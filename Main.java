@@ -11,7 +11,7 @@ public class Main {
         ArrayList<String> messages_for_mcp = new ArrayList<String>();
 
         int SOCKET_SERVER_PORT = 2006;
-        int MCP_PORT_NUMBER = 2001;
+        int MCP_PORT_NUMBER = 2000;
 
         ClientComms carriage_client = new ClientComms(SOCKET_SERVER_PORT, messages_for_client, messages_for_mcp);
 

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.LocalTime;
 
 public class MCPComms implements Runnable {
@@ -14,7 +15,7 @@ public class MCPComms implements Runnable {
     public LocalTime time;
     public ArrayList<String[]> jobsCCP;
     public ArrayList<String> jobsMCP;
-    private int SO_TIMEOUT = 5;
+    private int SO_TIMEOUT = 50;
 
     public MCPComms(InetAddress hostAddress, int portNumber, ArrayList<String[]> jobsC, ArrayList<String> jobsM) {
         try {
@@ -23,6 +24,7 @@ public class MCPComms implements Runnable {
             this.socket = new DatagramSocket(55101, InetAddress.getByName("127.0.0.1"));
             this.jobsCCP = jobsC;
             this.jobsMCP = jobsM;
+            this.receivedMsg = new String[] {};
         } catch (Exception e) {
             System.out.println(e);
         }
@@ -41,8 +43,6 @@ public class MCPComms implements Runnable {
                            // queue and init with MCP.
 
         init(); // Send CCIN
-        receiveMsg(); // Get AKIN (acknowledged)
-        System.out.println("Line 50");
 
         try {
             this.socket.setSoTimeout(SO_TIMEOUT);
@@ -59,8 +59,8 @@ public class MCPComms implements Runnable {
             receiveMsg();
 
             boolean is_kill = false;
-
-            if (this.receivedMsg.length != 0)
+        
+            if (this.receivedMsg.length > 0)
                 is_kill = handleMCPMessage(receivedMsg); // adds recieved message to the job queue that the ccp should
                                                          // be able to see.
 
@@ -95,7 +95,7 @@ public class MCPComms implements Runnable {
             sendMsg(hello);
 
             receiveMsg();
-            if (receivedMsg[1] == "AKIN") {
+            if (receivedMsg[1].equals("AKIN")) {
                 System.out.println("Connection Established!");
             }
         } catch (Exception e) {
@@ -123,11 +123,13 @@ public class MCPComms implements Runnable {
                 socket.receive(receivePacket);
                 String rawStr = new String(receivePacket.getData(), 0, receivePacket.getLength(),
                         StandardCharsets.UTF_8);
+                
                 receivedMsg = deserialize(rawStr);
+                
                 for (int i = 0; i < receivedMsg.length; i++)
                     System.out.println(receivedMsg[i]);
             } catch (Exception e) {
-                System.out.println(e);
+                
             }
         } catch (Exception e) {
             System.out.println(e);
@@ -140,22 +142,26 @@ public class MCPComms implements Runnable {
         List<String> values = new ArrayList<>();
 
         for (String pair : data) {
-            int colonIndex = pair.indexOf(": ");
+            int colonIndex = pair.indexOf(":");
             if (colonIndex != -1) {
                 String value = pair.substring(colonIndex + 2).trim().replace("\"", "");
                 values.add(value);
             }
         }
+        String[] actualData = new String[values.size()];
+        for(int i=0;i<values.size();i++){
+            actualData[i] = values.get(i);
+        }
 
-        return data;
+        return actualData;
     }
 
     public boolean handleMCPMessage(String[] message) {
-        if (message[4] != "KILL") {
+        if ("KILL".equals(message[4])) {
             return true;
         }
-
         this.jobsCCP.add(message);
+        System.out.println(message);
 
         return false;
     }
