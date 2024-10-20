@@ -66,7 +66,7 @@ public class MCPComms implements Runnable {
                 handleMCPMessage(receivedMsg); // adds recieved message to the job queue that the ccp should be able to see.
 
             checkForDisconnect();
-            
+
             if (is_kill) {
                 break;
             }
@@ -165,6 +165,7 @@ public class MCPComms implements Runnable {
             case "AKST":
                 break;
             case "EXEC":
+                sendAck();
                 this.jobsCCP.add(message[4]);
                 System.out.println(message[4]);
                 if("DISCONNECT".equals(message[4])){
@@ -192,6 +193,12 @@ public class MCPComms implements Runnable {
         String message = ("{\"client_type\": \"CCP\",\"message\": \"STAT\",\"client_id\": \"BR08\",\"sequence_number\": \"" + s_ccp
         + "\",\"status\": \"" + status + "\"}");;
         return message;
+    }
+
+    public void sendAck() {
+        String message = ("{\"client_type\": \"CCP\",\"message\": \"AKEK\",\"client_id\": \"BR08\",\"sequence_number\": \"" + s_ccp
+        + "\"}");
+        sendMsg(message);
     }
 
     public void checkForDisconnect(){
