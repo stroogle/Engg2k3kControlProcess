@@ -7,7 +7,7 @@ public class Main {
     public static void main(String[] args) throws Exception {
         System.out.println("Hello, World!");
 
-        ArrayList<String[]> messages_for_client = new ArrayList<String[]>();
+        ArrayList<String> messages_for_client = new ArrayList<String>();
         ArrayList<String> messages_for_mcp = new ArrayList<String>();
 
         int SOCKET_SERVER_PORT = 2006;

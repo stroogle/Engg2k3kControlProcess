@@ -4,9 +4,10 @@ import java.util.ArrayList;
 import java.net.*;
 import java.io.*;
 
+
 public class ClientComms implements Runnable {
 
-    private ArrayList<String[]> messages_for_client;
+    private ArrayList<String> messages_for_client;
     private ArrayList<String> messages_for_mcp;
     private int socket_server_port;
     private ServerSocket server;
@@ -14,7 +15,7 @@ public class ClientComms implements Runnable {
     private PrintWriter output;
     private BufferedReader input;
 
-    public ClientComms(int port, ArrayList<String[]> messages_for_client, ArrayList<String> messages_for_mcp)
+    public ClientComms(int port, ArrayList<String> messages_for_client, ArrayList<String> messages_for_mcp)
             throws Exception {
         this.socket_server_port = port;
         this.server = new ServerSocket(this.socket_server_port);
@@ -40,7 +41,7 @@ public class ClientComms implements Runnable {
             String[] commands = new String[] {};
 
             if (!messages_for_client.isEmpty())
-                commands = this.parseCommand(messages_for_client.remove(0));
+                commands = this.parseCommand(messages_for_client.remove(0));  // parse command needs changing to handle just string, not string[]
 
             for (int i = 0; i < commands.length; i++) {
                 this.sendMessage(commands[i]);

@@ -4,20 +4,23 @@ import java.util.ArrayList;
 import java.util.List;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.time.LocalTime;
+import java.util.Timer.*;
+
 
 public class MCPComms implements Runnable {
     public DatagramSocket socket;
     public InetAddress hostAddress;
     public int portNumber;
     public String[] receivedMsg;
-    public LocalTime time;
-    public ArrayList<String[]> jobsCCP;
+    public ArrayList<String> jobsCCP;
     public ArrayList<String> jobsMCP;
     private int SO_TIMEOUT = 50;
+    public int s_ccp = 1001;
+    public boolean is_kill = false;
+    public long timeOfLastSTRQ = 0;
 
-    public MCPComms(InetAddress hostAddress, int portNumber, ArrayList<String[]> jobsC, ArrayList<String> jobsM) {
+
+    public MCPComms(InetAddress hostAddress, int portNumber, ArrayList<String> jobsC, ArrayList<String> jobsM) {
         try {
             this.hostAddress = hostAddress;
             this.portNumber = portNumber;
@@ -36,7 +39,7 @@ public class MCPComms implements Runnable {
             try {
                 Thread.sleep(10);
             } catch (Exception error) {
-                System.out.println("I HATE SLEEP");
+                System.out.println(error);
             }
         }
         jobsMCP.remove(0); // we received that msg, saying connection all good - pop this message off the
@@ -58,12 +61,12 @@ public class MCPComms implements Runnable {
             // Handles incoming message
             receiveMsg();
 
-            boolean is_kill = false;
         
             if (this.receivedMsg.length > 0)
-                is_kill = handleMCPMessage(receivedMsg); // adds recieved message to the job queue that the ccp should
-                                                         // be able to see.
+                handleMCPMessage(receivedMsg); // adds recieved message to the job queue that the ccp should be able to see.
 
+            checkForDisconnect();
+            
             if (is_kill) {
                 break;
             }
@@ -88,10 +91,8 @@ public class MCPComms implements Runnable {
 
     public void init() {
         try {
-            time = LocalTime.now();
-            String timeStr = time.toString();
-            String hello = ("{\"client_type\":\"ccp\",\"message\":\"CCIN\",\"client_id\":\"BR08\",\"timestamp\":\""
-                    + timeStr + "\"}"); // Our HELLO to MCP
+        
+            String hello = ("{\"client_type\": \"CCP\",\"message\": \"CCIN\",\"client_id\": \"BR08\",\"sequence_number\": \"" + s_ccp + "\"}"); // Our HELLO to MCP
             sendMsg(hello);
 
             receiveMsg();
@@ -108,7 +109,8 @@ public class MCPComms implements Runnable {
         try {
             byte[] sendData = msg.getBytes(StandardCharsets.UTF_8);
             DatagramPacket packetToSend = new DatagramPacket(sendData, sendData.length, hostAddress, portNumber);
-            socket.send(packetToSend);
+            socket.send(packetToSend);  
+            s_ccp++;
         } catch (Exception e) {
             System.out.println(e);
         }
@@ -156,14 +158,28 @@ public class MCPComms implements Runnable {
         return actualData;
     }
 
-    public boolean handleMCPMessage(String[] message) {
-        if ("KILL".equals(message[4])) {
-            return true;
-        }
-        this.jobsCCP.add(message);
-        System.out.println(message);
+    public void handleMCPMessage(String[] message) {
+        String msg = message[1]; // Extract the value at index 1
 
-        return false;
+        switch (msg) {
+            case "AKST":
+                break;
+            case "EXEC":
+                this.jobsCCP.add(message[4]);
+                System.out.println(message[4]);
+                if("DISCONNECT".equals(message[4])){
+                    is_kill = true;
+                }
+                break; 
+            case "STRQ":
+                this.jobsCCP.add(message[1]);
+                System.out.println(message[1]);
+                timeOfLastSTRQ = System.currentTimeMillis();
+                break; 
+            default:
+                System.out.println("Unknown command: " + msg);
+                break;
+        }
     }
 
     public void kill() {
@@ -173,21 +189,19 @@ public class MCPComms implements Runnable {
     }
 
     public String serialize(String status) {
-        String message;
-        String stationID;
-        time = LocalTime.now();
-        String timeStr = time.toString();
-        if (status.length() > 8) { // message status is STOPPED_AT_STATION+STXX.
-            stationID = status.substring(status.length() - 4);
-            status = status.substring(0, status.length() - 4);
-            message = ("{\"client_type\":\"ccp\",\"message\":\"STAT\",\"client_id\":\"BR08\",\"timestamp\":\"" + timeStr
-                    + "\",\"status\":\"" + status + "\",\"station_id\":\"" + stationID + "\"}");
-        } else { // normal status, not at a station.
-            message = ("{\"client_type\":\"ccp\",\"message\":\"STAT\",\"client_id\":\"BR08\",\"timestamp\":\"" + timeStr
-                    + "\",\"status\":\"" + status + "\"}");
-        }
-
+        String message = ("{\"client_type\": \"CCP\",\"message\": \"STAT\",\"client_id\": \"BR08\",\"sequence_number\": \"" + s_ccp
+        + "\",\"status\": \"" + status + "\"}");;
         return message;
+    }
+
+    public void checkForDisconnect(){
+        long currentTime = System.currentTimeMillis();
+        if (timeOfLastSTRQ != 0 && (currentTime - timeOfLastSTRQ) >= 6000) {
+            System.out.println("No STRQ message received for 6 seconds. Disconnecting...");
+            this.jobsCCP.add("STOPC");
+            this.jobsCCP.add("DISCONNECT");
+            is_kill = true; 
+        }
     }
 
 }
