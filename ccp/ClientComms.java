@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.net.*;
 import java.io.*;
 
-
 public class ClientComms implements Runnable {
 
     private ArrayList<String> messages_for_client;
@@ -38,15 +37,19 @@ public class ClientComms implements Runnable {
         }
 
         while (true) {
-            String[] commands = new String[] {};
+            int command = -1;
 
             if (!messages_for_client.isEmpty())
-                commands = this.parseCommand(messages_for_client.remove(0));  // parse command needs changing to handle just string, not string[]
+                command = this.parseCommand(messages_for_client.remove(0)); // parse command needs changing to handle
+                                                                            // just string, not string[]
 
-            for (int i = 0; i < commands.length; i++) {
-                this.sendMessage(commands[i]);
-                System.out.println("Command for client from queue: " + commands[i]);
-            }
+            // for (int i = 0; i < commands.length; i++) {
+            // this.sendMessage(commands[i]);
+            // System.out.println("Command for client from queue: " + commands[i]);
+            // }
+
+            if (command != -1)
+                this.sendMessage(command);
 
             String nextLine = "";
 
@@ -98,6 +101,41 @@ public class ClientComms implements Runnable {
         }
     }
 
+    private int parseCommand(String command) {
+        int res;
+        switch (command) {
+            case "STOPC":
+                res = 1;
+                break;
+            case "STOPO":
+                res = 2;
+                break;
+            case "FSLOWC":
+                res = 3;
+                break;
+            case "FFASTC":
+                res = 4;
+                break;
+            case "RSLOWC":
+                res = 5;
+                break;
+            case "DISCONNECT":
+                res = 6;
+                break;
+            case "STRQ":
+                res = 7;
+                break;
+            case "STOP":
+                res = 8;
+                break;
+            default:
+                res = 0;
+                break;
+        }
+
+        return res;
+    }
+
     private void close() throws Exception {
         this.input.close();
         this.output.close();
@@ -108,6 +146,11 @@ public class ClientComms implements Runnable {
     private void sendMessage(String str) {
         this.output.println(str);
         System.out.println("SENT: " + str);
+    }
+
+    private void sendMessage(int command) {
+        this.output.println(command);
+        System.out.println("Sent: " + command + " to the client. From CCPComms");
     }
 
 }
