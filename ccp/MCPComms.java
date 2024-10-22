@@ -24,7 +24,7 @@ public class MCPComms implements Runnable {
         try {
             this.hostAddress = hostAddress;
             this.portNumber = portNumber;
-            this.socket = new DatagramSocket(55101, InetAddress.getByName("127.0.0.1"));
+            this.socket = new DatagramSocket(3001, InetAddress.getByName("127.0.0.1"));
             this.jobsCCP = jobsC;
             this.jobsMCP = jobsM;
             this.receivedMsg = new String[] {};
@@ -60,7 +60,6 @@ public class MCPComms implements Runnable {
         while (true) {
             // Handles incoming message
             receiveMsg();
-
         
             if (this.receivedMsg.length > 0)
                 handleMCPMessage(receivedMsg); // adds recieved message to the job queue that the ccp should be able to see.
@@ -68,6 +67,7 @@ public class MCPComms implements Runnable {
             checkForDisconnect();
 
             if (is_kill) {
+                System.out.println("Disconnecting");
                 break;
             }
 
@@ -107,6 +107,7 @@ public class MCPComms implements Runnable {
 
     public void sendMsg(String msg) {
         try {
+            System.out.println("Sent: " + msg);
             byte[] sendData = msg.getBytes(StandardCharsets.UTF_8);
             DatagramPacket packetToSend = new DatagramPacket(sendData, sendData.length, hostAddress, portNumber);
             socket.send(packetToSend);  
@@ -127,7 +128,7 @@ public class MCPComms implements Runnable {
                         StandardCharsets.UTF_8);
                 
                 receivedMsg = deserialize(rawStr);
-                
+
                 for (int i = 0; i < receivedMsg.length; i++)
                     System.out.println(receivedMsg[i]);
             } catch (Exception e) {
@@ -160,6 +161,7 @@ public class MCPComms implements Runnable {
 
     public void handleMCPMessage(String[] message) {
         String msg = message[1]; // Extract the value at index 1
+        System.out.println(message[1]); // Received ACTION
 
         switch (msg) {
             case "AKST":
@@ -196,7 +198,7 @@ public class MCPComms implements Runnable {
     }
 
     public void sendAck() {
-        String message = ("{\"client_type\": \"CCP\",\"message\": \"AKEK\",\"client_id\": \"BR08\",\"sequence_number\": \"" + s_ccp
+        String message = ("{\"client_type\": \"CCP\",\"message\": \"AKEX\",\"client_id\": \"BR08\",\"sequence_number\": \"" + s_ccp
         + "\"}");
         sendMsg(message);
     }
